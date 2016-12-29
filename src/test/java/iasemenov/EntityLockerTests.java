@@ -71,7 +71,7 @@ public class EntityLockerTests {
             });
             locker.unlockEntity(id);
 
-            task1.get(10, TimeUnit.MILLISECONDS);
+            task1.get(100, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             logger.fatal("Should not have happened", e);
             locker.unlockEntity(id);
