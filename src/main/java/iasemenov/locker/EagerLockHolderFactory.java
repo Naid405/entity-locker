@@ -9,10 +9,8 @@ public class EagerLockHolderFactory implements LockHolderFactory {
 
     private class EagerLockHolder implements LockHolder {
         private final ReentrantLock lock;
-        private final boolean fairLock;
 
         public EagerLockHolder(boolean fairLock) {
-            this.fairLock = fairLock;
             lock = new ReentrantLock(fairLock);
         }
 

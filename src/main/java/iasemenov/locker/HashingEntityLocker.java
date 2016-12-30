@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @param <I> Entity ID type
  */
-public class EntityLockerImpl<I> implements EntityLocker<I> {
+public class HashingEntityLocker<I> implements EntityLocker<I> {
     private final LockHolder[] lockArray;
     private final int lockArraySize;
     private final LockHolderFactory lockHolderFactory;
@@ -23,7 +23,7 @@ public class EntityLockerImpl<I> implements EntityLocker<I> {
      * @param approximateNumberOfEntities approximate number of entities supposed to be handled by this EntityLocker
      * @param lockContentionFactor        number of entities under single lock
      */
-    public EntityLockerImpl(int approximateNumberOfEntities, int lockContentionFactor) {
+    public HashingEntityLocker(int approximateNumberOfEntities, int lockContentionFactor) {
         Assert.moreTheZero(approximateNumberOfEntities, "Approximate number of entities should be more then 0");
         Assert.moreTheZero(lockContentionFactor, "Lock contention factor should be more then 0");
 
@@ -40,7 +40,7 @@ public class EntityLockerImpl<I> implements EntityLocker<I> {
      * @param lockContentionFactor        number of entities under single lock
      * @param lockHolderFactory           factory for id lock holders
      */
-    public EntityLockerImpl(int approximateNumberOfEntities, int lockContentionFactor, LockHolderFactory lockHolderFactory) {
+    public HashingEntityLocker(int approximateNumberOfEntities, int lockContentionFactor, LockHolderFactory lockHolderFactory) {
         Assert.moreTheZero(approximateNumberOfEntities, "Approximate number of entities should be more then 0");
         Assert.moreTheZero(lockContentionFactor, "Lock contention factor should be more then 0");
         Assert.notNull(lockHolderFactory, "Lock supplier cannot be null");
@@ -60,18 +60,21 @@ public class EntityLockerImpl<I> implements EntityLocker<I> {
         return lockArray;
     }
 
+    @Override
     public void lockEntity(I entityId) throws InterruptedException {
         Assert.notNull(entityId, "Entity ID cannot be null");
         ReentrantLock lock = lockArray[(lockArraySize - 1) & hash(entityId)].get();
-        lock.lock();
+        lock.lockInterruptibly();
     }
 
-    public boolean lockEntity(I entityId, long timeout, TimeUnit unit) throws InterruptedException {
+    @Override
+    public boolean lockEntity(I entityId, long timeoutNanos) throws InterruptedException {
         Assert.notNull(entityId, "Entity ID cannot be null");
         ReentrantLock lock = lockArray[(lockArraySize - 1) & hash(entityId)].get();
-        return lock.tryLock(timeout, unit);
+        return lock.tryLock(timeoutNanos, TimeUnit.NANOSECONDS);
     }
 
+    @Override
     public void unlockEntity(I entityId) {
         Assert.notNull(entityId, "Entity ID cannot be null");
         ReentrantLock lock = lockArray[(lockArraySize - 1) & hash(entityId)].get();
