@@ -1,5 +1,5 @@
-EntityLocker
-------------
+EntityLocker assignment
+============
 
 The task is to create a reusable utility class that provides synchronization mechanism similar to row-level DB locking.
 
@@ -24,3 +24,18 @@ I. Allow reentrant locking.
 II. Allow the caller to specify timeout for locking an entity.
 
 III. Implement protection from deadlocks (but not taking into account possible locks outside EntityLocker).
+
+Implementation
+--------------
+Current implementation provides two variants:
+
+1. iasemenov.locker.HashingEntityLocker - first prototype based on the same idea as Doug Lea's ConcurrentHashMap - locking key segments.
+Segmentation is based on hashing entity ID's.
+This implementation will degrade to a single mutex in case of poorly implemented hashCode() for entity ID, or if the number of segments is too small,
+but it may be a bit faster then the second implementation in case of low number of threads operating on a highly distributed (in terms of hash values) IDs.
+
+2. iasemenov.locker.ConcurrentMapEntityLocker - based on using ConcurrentMap to map entity ID to certain lock.
+Locks are removed from map upon unlock if no other thread is trying to lock on it.
+
+Both implementations allow lock reentry and "timeouted" locking. None of them provide deadlock prevention.
+
