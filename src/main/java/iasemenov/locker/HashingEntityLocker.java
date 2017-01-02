@@ -78,7 +78,11 @@ public class HashingEntityLocker<I> implements EntityLocker<I> {
     public void unlockEntity(I entityId) {
         Assert.notNull(entityId, "Entity ID cannot be null");
         ReentrantLock lock = lockArray[(lockArraySize - 1) & hash(entityId)].get();
-        lock.unlock();
+        try {
+            lock.unlock();
+        } catch (IllegalMonitorStateException ignored) {
+            //Suppress the exception to conform with interface contract
+        }
     }
 
     /**
