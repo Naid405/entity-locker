@@ -8,8 +8,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * EntityLocker implementation based on concurrent map.
  * <p>
- * Type of concurrent map can be overriden through constructor.
- * Entity ID should have the same contract as the key of designated map.
+ * Type of concurrent map can be overridden through constructor.
+ * Entity ID should have the same contract as keys of designated map.
  * <p>
  * This implementation guarantees that freed-up locks could be collected by GC.
  *
@@ -19,13 +19,15 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
     private final ConcurrentMap<I, ReentrantLock> locksMap;
 
     /**
-     * Uses @see java.util.concurrent.ConcurrentHashMap for id-lock mapping
+     * Constructs new locker using @see java.util.concurrent.ConcurrentHashMap for id-lock mapping
      */
     public ConcurrentMapEntityLocker() {
         this.locksMap = new ConcurrentHashMap<>();
     }
 
     /**
+     * Constructs new locker using given ConcurrentMap for id-lock mapping
+     *
      * @param locksMap ConcurrentMap to use for id-lock mapping
      */
     public ConcurrentMapEntityLocker(ConcurrentMap<I, ReentrantLock> locksMap) {
@@ -78,10 +80,10 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
         ReentrantLock lock = locksMap.get(entityId);
         //Remove the lock from map if no threads are waiting on it to conserve memory
         if (lock != null) {
-            if (!lock.hasQueuedThreads()) {
+            lock.unlock();
+            if (!lock.hasQueuedThreads() && !lock.isLocked()) {
                 locksMap.remove(entityId);
             }
-            lock.unlock();
         }
     }
 }
