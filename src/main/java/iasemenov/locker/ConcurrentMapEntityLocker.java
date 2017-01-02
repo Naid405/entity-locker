@@ -1,5 +1,7 @@
 package iasemenov.locker;
 
+import iasemenov.util.Assert;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +38,7 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
 
     @Override
     public void lockEntity(I entityId) throws InterruptedException {
+        Assert.notNull(entityId, "Entity ID cannot be null");
         boolean lockedInMap = false;
         //Get the lock, lock on it and check if it is still in the map
         //because it may have been removed by unlock while we locked
@@ -52,6 +55,7 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
 
     @Override
     public boolean lockEntity(I entityId, long timeoutNanos) throws InterruptedException {
+        Assert.notNull(entityId, "Entity ID cannot be null");
         boolean lockedInMap = false;
         long finalNanos = System.nanoTime() + timeoutNanos;
         do {
