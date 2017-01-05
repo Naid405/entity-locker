@@ -84,10 +84,10 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
         ReentrantLock lock = locksMap.get(entityId);
         //Remove the lock from map if no threads are waiting on it to conserve memory
         if (lock != null) {
-            lock.unlock();
-            if (!lock.hasQueuedThreads() && !lock.isLocked()) {
+            if (!lock.hasQueuedThreads()) {
                 locksMap.remove(entityId);
             }
+            lock.unlock();
         }
     }
 }
