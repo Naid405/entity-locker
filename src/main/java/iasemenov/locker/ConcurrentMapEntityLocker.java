@@ -14,6 +14,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * Entity ID should have the same contract as keys of designated map.
  * <p>
  * This implementation guarantees that freed-up locks could be collected by GC.
+ * <p>
+ * May cause memory leaks (locks are held by ConcurrentMap when no one is using them) on a rare occasion -
+ * timeout expires in between checking that there's no waiters and removing a lock from map while
+ * unlocking entityId which is being locked on with timeout by other thread.
+ * Can be considered an "overhead" since it will be removed by next successful lock-unlock operation.
  *
  * @param <I> Entity ID type
  */
