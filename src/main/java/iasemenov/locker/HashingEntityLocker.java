@@ -40,7 +40,8 @@ public class HashingEntityLocker<I> implements EntityLocker<I> {
      * @param lockContentionFactor        number of entities under single lock
      * @param lockHolderFactory           factory for id lock holders
      */
-    public HashingEntityLocker(int approximateNumberOfEntities, int lockContentionFactor, LockHolderFactory lockHolderFactory) {
+    public HashingEntityLocker(int approximateNumberOfEntities, int lockContentionFactor,
+                               LockHolderFactory lockHolderFactory) {
         Assert.moreTheZero(approximateNumberOfEntities, "Approximate number of entities should be more then 0");
         Assert.moreTheZero(lockContentionFactor, "Lock contention factor should be more then 0");
         Assert.notNull(lockHolderFactory, "Lock supplier cannot be null");
@@ -78,11 +79,7 @@ public class HashingEntityLocker<I> implements EntityLocker<I> {
     public void unlockEntity(I entityId) {
         Assert.notNull(entityId, "Entity ID cannot be null");
         ReentrantLock lock = lockArray[(lockArraySize - 1) & hash(entityId)].get();
-        try {
-            lock.unlock();
-        } catch (IllegalMonitorStateException ignored) {
-            //Suppress the exception to conform with interface contract
-        }
+        lock.unlock();
     }
 
     /**

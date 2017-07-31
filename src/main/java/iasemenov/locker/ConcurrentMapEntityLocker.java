@@ -43,19 +43,7 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
 
     @Override
     public void lockEntity(I entityId) throws InterruptedException {
-        Assert.notNull(entityId, "Entity ID cannot be null");
-        boolean lockedInMap = false;
-        //Get the lock, lock on it and check if it is still in the map
-        //because it may have been removed by unlock while we locked
-        do {
-            ReentrantLock lock = getMappedLock(entityId);
-            lock.lockInterruptibly();
-            if (lock == getMappedLock(entityId)) {
-                lockedInMap = true;
-            } else {
-                lock.unlock();
-            }
-        } while (!lockedInMap);
+        lockEntity(entityId, -1);
     }
 
     @Override
@@ -65,8 +53,13 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
         long finalNanos = System.nanoTime() + timeoutNanos;
         do {
             ReentrantLock lock = getMappedLock(entityId);
-            if (!lock.tryLock(finalNanos - System.nanoTime(), TimeUnit.NANOSECONDS)) {
-                return false;
+            // If timeout is negative - do not timeout
+            if (timeoutNanos >= 0) {
+                if (!lock.tryLock(finalNanos - System.nanoTime(), TimeUnit.NANOSECONDS)) {
+                    return false;
+                }
+            } else {
+                lock.lockInterruptibly();
             }
             if (lock == getMappedLock(entityId)) {
                 lockedInMap = true;
@@ -79,9 +72,7 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
     }
 
     private ReentrantLock getMappedLock(I entityId) {
-        ReentrantLock newLock = new ReentrantLock();
-        ReentrantLock lock = locksMap.putIfAbsent(entityId, newLock);
-        return lock == null ? newLock : lock;
+        return locksMap.computeIfAbsent(entityId, id -> new ReentrantLock());
     }
 
     @Override
@@ -89,6 +80,9 @@ public class ConcurrentMapEntityLocker<I> implements EntityLocker<I> {
         ReentrantLock lock = locksMap.get(entityId);
         //Remove the lock from map if no threads are waiting on it to conserve memory
         if (lock != null) {
+            if (!lock.isHeldByCurrentThread())
+                throw new IllegalMonitorStateException();
+
             if (!lock.hasQueuedThreads()) {
                 locksMap.remove(entityId);
             }

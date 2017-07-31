@@ -36,6 +36,7 @@ public interface EntityLocker<I> {
      *
      * @param entityId entity ID to unlock, should not be null
      * @throws IllegalArgumentException in case entity id is null
+     * @throws IllegalMonitorStateException in case entity is not held by current thread
      */
     void unlockEntity(I entityId);
 }
