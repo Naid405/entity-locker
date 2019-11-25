@@ -27,19 +27,21 @@ class StampedEntityLocker<T> {
     }
   }
 
-  private fun getEntityLock(readLockStamp: Long, coordinates: T): Pair<Lock, Long> {
+  private tailrec fun getEntityLock(readLockStamp: Long, coordinates: T): Pair<Lock, Long> {
     val entityLock = locksByEntity[coordinates]
     if (entityLock != null) return entityLock to readLockStamp
 
     val writeLockStamp = entityLocksMapLock.tryConvertToWriteLock(readLockStamp)
-    if (writeLockStamp == 0L) {
-      Thread.yield()
-      return getEntityLock(readLockStamp, coordinates)
-    }
-    else {
+    return if (writeLockStamp == 0L) {
+      try {
+        Thread.sleep(50L)
+      } catch (e: InterruptedException) {
+      }
+      getEntityLock(readLockStamp, coordinates)
+    } else {
       val newEntityLock = ReentrantLock(true)
       locksByEntity[coordinates] = newEntityLock
-      return newEntityLock to entityLocksMapLock.tryConvertToReadLock(writeLockStamp)
+      newEntityLock to entityLocksMapLock.tryConvertToReadLock(writeLockStamp)
     }
   }
 
